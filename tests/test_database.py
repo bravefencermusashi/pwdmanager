@@ -1,4 +1,4 @@
-import database
+from pwdmanager import database
 from tests import helper
 
 
@@ -50,6 +50,14 @@ class TestDatabase:
         entry_2 = database.DatabaseEntry('toto', None, None)
         db.add_entry(entry_2)
 
+        matching_items = db.find_matching_entries(None)
+        assert len(matching_items) == 2
+        assert entry_1 in matching_items and entry_2 in matching_items
+
+        matching_items = db.find_matching_entries('')
+        assert len(matching_items) == 2
+        assert entry_1 in matching_items and entry_2 in matching_items
+
         matching_items = db.find_matching_entries('st')
         assert len(matching_items) == 1
         assert entry_1 in matching_items
@@ -63,9 +71,6 @@ class TestDatabase:
         matching_items = db.find_matching_entries('lol')
         assert len(matching_items) == 1
         assert entry_1 in matching_items
-
-
-
 
 
 def test_create_database_entry():

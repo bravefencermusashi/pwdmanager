@@ -1,4 +1,4 @@
-import database
+from pwdmanager import database
 
 
 def create_full_json_repr(name='test_name'):

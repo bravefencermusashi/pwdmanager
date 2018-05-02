@@ -2,7 +2,7 @@ import datetime
 
 import io
 
-from database import Database, DatabaseEntry
+from pwdmanager.database import Database, DatabaseEntry
 from abc import ABC, abstractmethod
 
 
@@ -31,7 +31,7 @@ class Command(ABC):
         return self.render(res)
 
 
-class CreateEntry(Command):
+class AddEntry(Command):
     def __init__(self, name, login, pwd, login_alias=None):
         self.name = name
         self.login = login
@@ -76,7 +76,8 @@ class ShowEntry(Command):
 
     def render(self, entry: DatabaseEntry):
         if entry:
-            repr = io.StringIO('name: {}\n'.format(entry.name))
+            repr = io.StringIO()
+            repr.write('name: {}\n'.format(entry.name))
             repr.write('login: {}\n'.format(entry.login))
             if entry.login_alias:
                 repr.write('login alias: {}\n'.format(entry.login_alias))
@@ -88,7 +89,7 @@ class ShowEntry(Command):
             repr.write('creation date: {}\n'.format(entry.creation_date))
             repr.write('last update date: {}\n'.format(entry.last_update_date))
 
-            res = str(repr)
+            res = repr.getvalue()
         else:
             res = ''
 
@@ -103,8 +104,7 @@ class ListEntries(Command):
         self.search = search
 
     def perform_checks(self, database: Database):
-        if not self.search:
-            raise CommandException('search cannot be empty')
+        pass
 
     def execute(self, database: Database):
         return database.find_matching_entries(self.search)
@@ -116,7 +116,7 @@ class ListEntries(Command):
         if entry_list:
             repr = io.StringIO()
             repr.writelines(map(self.minimal_repr, entry_list))
-            res = str(repr)
+            res = repr.getvalue()
         else:
             res = ''
 

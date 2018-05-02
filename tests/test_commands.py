@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import commands, database
+from pwdmanager import commands, database
 
 
 class TestCreateEntry:
@@ -10,18 +10,18 @@ class TestCreateEntry:
         db = database.Database(dict())
         arg_list = [(None, 'login', 'pwd'), ('name', None, 'pwd'), ('name', 'login', None)]
         for args in arg_list:
-            com = commands.CreateEntry(*args)
+            com = commands.AddEntry(*args)
             with pytest.raises(commands.CommandException, match='.*empty.*'):
                 com.perform_checks(db)
 
-        com = commands.CreateEntry('name', 'login', 'pwd')
+        com = commands.AddEntry('name', 'login', 'pwd')
         com.perform_checks(db)
 
         db.add_entry(database.DatabaseEntry('name', None, None))
         with pytest.raises(commands.CommandException, match='.*exists.*'):
             com.perform_checks(db)
 
-        com = commands.CreateEntry('alias', 'login', 'pwd')
+        com = commands.AddEntry('alias', 'login', 'pwd')
         com.perform_checks(db)
 
         db['name'].aliases = ['alias']
@@ -30,7 +30,7 @@ class TestCreateEntry:
 
     def test_execute(self):
         db = database.Database(dict())
-        command = commands.CreateEntry('name', 'login', 'pwd', 'login_alias')
+        command = commands.AddEntry('name', 'login', 'pwd', 'login_alias')
         alias_list = ['alias1', 'alias2']
         command.aliases = alias_list
         tag_list = ['tag1', 'tag2']
@@ -50,7 +50,7 @@ class TestCreateEntry:
         assert entry.last_update_date
 
     def test_check_and_execute(self):
-        command = commands.CreateEntry(None, None, None)
+        command = commands.AddEntry(None, None, None)
         command.perform_checks = MagicMock()
         command.execute = MagicMock()
         command.execute.return_value = 'execute_returned'
@@ -105,14 +105,6 @@ class TestListEntries:
     def test_perform_checks(self):
         com = commands.ListEntries('search')
         com.perform_checks(None)
-
-        com.search = None
-        with pytest.raises(commands.CommandException, match='.*empty.*'):
-            com.perform_checks(None)
-
-        com.search = ''
-        with pytest.raises(commands.CommandException, match='.*empty.*'):
-            com.perform_checks(None)
 
     def test_execute(self):
         db = database.Database(dict())

@@ -1,3 +1,6 @@
+import json
+
+
 def create_database(json_repr: list):
     return Database({entry.name: entry for entry in map(create_database_entry, json_repr)})
 
@@ -11,6 +14,44 @@ def create_database_entry(json_repr: dict):
     db_entry.last_update_date = json_repr['last_update_date']
 
     return db_entry
+
+
+def json_object_hook(o):
+    if '__db_entry__' in o:
+        db_entry = DatabaseEntry(o['name'], o['login'], o['pwd'], o.get('login_alias'))
+        db_entry.creation_date = o['creation_date']
+        db_entry.last_update_date = o['last_update_date']
+        db_entry.aliases = o.get('aliases', list())
+        db_entry.tags = o.get('tags', list())
+        return db_entry
+    else:
+        return o
+
+
+class DatabaseJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        default_encoding = json.JSONEncoder.default
+        if isinstance(o, Database):
+            return o.db
+        elif isinstance(o, DatabaseEntry):
+            res = {
+                '__db_entry__': True,
+                'name': o.name,
+                'login': o.login,
+                'pwd': o.pwd,
+                'creation_date': o.creation_date,
+                'last_update_date': o.last_update_date
+            }
+            if o.aliases:
+                res['aliases'] = o.aliases
+            if o.tags:
+                res['tags'] = o.tags
+            if o.login_alias:
+                res['login_alias'] = o.login_alias
+
+            return res
+        else:
+            return default_encoding(self, o)
 
 
 class DatabaseEntry:
@@ -50,14 +91,17 @@ class Database:
         self.db[entry.name] = entry
 
     def find_matching_entries(self, item):
-        matching_entries = list()
-        for entry in self.db.values():
-            if item in entry.name:
-                matching_entries.append(entry)
-            else:
-                for alias in entry.aliases:
-                    if item in alias:
-                        matching_entries.append(entry)
-                        break
+        if not item:
+            matching_entries = list(self.db.values())
+        else:
+            matching_entries = list()
+            for entry in self.db.values():
+                if item in entry.name:
+                    matching_entries.append(entry)
+                else:
+                    for alias in entry.aliases:
+                        if item in alias:
+                            matching_entries.append(entry)
+                            break
 
         return matching_entries
