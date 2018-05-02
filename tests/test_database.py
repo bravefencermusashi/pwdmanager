@@ -42,6 +42,31 @@ class TestDatabase:
         assert len(db) == 1
         assert db['test_name'] == entry
 
+    def test_find_matching_entries(self):
+        db = database.Database(dict())
+        assert not db.find_matching_entries('st')
+        entry_1 = database.DatabaseEntry('test_name', None, None)
+        db.add_entry(entry_1)
+        entry_2 = database.DatabaseEntry('toto', None, None)
+        db.add_entry(entry_2)
+
+        matching_items = db.find_matching_entries('st')
+        assert len(matching_items) == 1
+        assert entry_1 in matching_items
+
+        matching_items = db.find_matching_entries('t')
+        assert len(matching_items) == 2
+        assert entry_1 in matching_items and entry_2 in matching_items
+
+        assert not db.find_matching_entries('lol')
+        entry_1.aliases.append('ololo')
+        matching_items = db.find_matching_entries('lol')
+        assert len(matching_items) == 1
+        assert entry_1 in matching_items
+
+
+
+
 
 def test_create_database_entry():
     json_repr = helper.create_full_json_repr()

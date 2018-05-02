@@ -53,7 +53,78 @@ class TestCreateEntry:
         command = commands.CreateEntry(None, None, None)
         command.perform_checks = MagicMock()
         command.execute = MagicMock()
-        command.check_and_execute(None)
+        command.execute.return_value = 'execute_returned'
+        command.render = MagicMock()
+        command.render.return_value = 'render_returned'
+
+        res = command.check_execute_render(None)
 
         assert command.perform_checks.call_count == 1
         assert command.execute.call_count == 1
+        command.render.assert_called_with('execute_returned')
+        assert res == 'render_returned'
+
+
+class TestShowEntry:
+    def test_perform_checks(self):
+        com = commands.ShowEntry('search')
+        com.perform_checks(None)
+
+        com.search = None
+        with pytest.raises(commands.CommandException, match='.*empty.*'):
+            com.perform_checks(None)
+
+        com.search = ''
+        with pytest.raises(commands.CommandException, match='.*empty.*'):
+            com.perform_checks(None)
+
+    def test_execute(self):
+        com = commands.ShowEntry('search')
+
+        db = database.Database(dict())
+        assert not com.execute(db)
+        test_entry = database.DatabaseEntry('test', None, None)
+        db.add_entry(test_entry)
+        assert not com.execute(db)
+        search_entry = database.DatabaseEntry('search', None, None)
+        db.add_entry(search_entry)
+        assert com.execute(db) == search_entry
+        com.search = 'search_alias'
+        assert not com.execute(db)
+        test_entry.aliases.append('search_alias')
+        assert com.execute(db) == test_entry
+
+    def test_render(self):
+        com = commands.ShowEntry('search')
+
+        assert not com.render(None)
+        assert com.render(database.DatabaseEntry('test', None, None))
+
+
+class TestListEntries:
+    def test_perform_checks(self):
+        com = commands.ListEntries('search')
+        com.perform_checks(None)
+
+        com.search = None
+        with pytest.raises(commands.CommandException, match='.*empty.*'):
+            com.perform_checks(None)
+
+        com.search = ''
+        with pytest.raises(commands.CommandException, match='.*empty.*'):
+            com.perform_checks(None)
+
+    def test_execute(self):
+        db = database.Database(dict())
+        com = commands.ListEntries('search')
+        assert not com.execute(db)
+
+        db.find_matching_entries = MagicMock()
+        db.find_matching_entries.return_value = 'returned'
+
+        assert com.execute(db) == 'returned'
+
+    def test_render(self):
+        com = commands.ListEntries('search')
+        assert not com.render(None)
+        assert com.render([database.DatabaseEntry('n', 'l', 'p'), database.DatabaseEntry('nn', 'll', 'pp')])

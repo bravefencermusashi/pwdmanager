@@ -1,6 +1,9 @@
 import datetime
 
+import io
+
 from database import Database, DatabaseEntry
+from abc import ABC, abstractmethod
 
 
 class CommandException(Exception):
@@ -8,7 +11,27 @@ class CommandException(Exception):
         self.msg = msg
 
 
-class CreateEntry:
+class Command(ABC):
+
+    @abstractmethod
+    def perform_checks(self, database: Database):
+        pass
+
+    @abstractmethod
+    def execute(self, database: Database):
+        pass
+
+    @abstractmethod
+    def render(self, to_render):
+        pass
+
+    def check_execute_render(self, database: Database):
+        self.perform_checks(database)
+        res = self.execute(database)
+        return self.render(res)
+
+
+class CreateEntry(Command):
     def __init__(self, name, login, pwd, login_alias=None):
         self.name = name
         self.login = login
@@ -37,6 +60,64 @@ class CreateEntry:
 
         database.add_entry(entry)
 
-    def check_and_execute(self, database: Database):
-        self.perform_checks(database)
-        self.execute(database)
+        return entry
+
+    def render(self, to_render):
+        return 'entry with name {} successfully added to database'.format(to_render.name)
+
+
+class ShowEntry(Command):
+    def __init__(self, search):
+        self.search = search
+
+    def perform_checks(self, database: Database):
+        if not self.search:
+            raise CommandException('search cannot be empty')
+
+    def render(self, entry: DatabaseEntry):
+        if entry:
+            repr = io.StringIO('name: {}\n'.format(entry.name))
+            repr.write('login: {}\n'.format(entry.login))
+            if entry.login_alias:
+                repr.write('login alias: {}\n'.format(entry.login_alias))
+            repr.write('password: {}\n'.format(entry.pwd))
+            if entry.aliases:
+                repr.write('aliases: {}\n'.format(', '.join(entry.aliases)))
+            if entry.tags:
+                repr.write('tags: {}\n'.format(', '.join(entry.tags)))
+            repr.write('creation date: {}\n'.format(entry.creation_date))
+            repr.write('last update date: {}\n'.format(entry.last_update_date))
+
+            res = str(repr)
+        else:
+            res = ''
+
+        return res
+
+    def execute(self, database: Database):
+        return database[self.search]
+
+
+class ListEntries(Command):
+    def __init__(self, search):
+        self.search = search
+
+    def perform_checks(self, database: Database):
+        if not self.search:
+            raise CommandException('search cannot be empty')
+
+    def execute(self, database: Database):
+        return database.find_matching_entries(self.search)
+
+    def minimal_repr(self, entry: DatabaseEntry):
+        return 'name: {}\nlogin: {}\npassword: {}\n'.format(entry.name, entry.login, entry.pwd)
+
+    def render(self, entry_list: list):
+        if entry_list:
+            repr = io.StringIO()
+            repr.writelines(map(self.minimal_repr, entry_list))
+            res = str(repr)
+        else:
+            res = ''
+
+        return res

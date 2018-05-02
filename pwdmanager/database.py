@@ -48,3 +48,16 @@ class Database:
 
     def add_entry(self, entry: DatabaseEntry):
         self.db[entry.name] = entry
+
+    def find_matching_entries(self, item):
+        matching_entries = list()
+        for entry in self.db.values():
+            if item in entry.name:
+                matching_entries.append(entry)
+            else:
+                for alias in entry.aliases:
+                    if item in alias:
+                        matching_entries.append(entry)
+                        break
+
+        return matching_entries
