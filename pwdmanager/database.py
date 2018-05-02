@@ -69,6 +69,7 @@ class DatabaseEntry:
 class Database:
     def __init__(self, db: dict):
         self.db = db
+        self.modified = False
 
     def __len__(self):
         return len(self.db)
@@ -89,6 +90,7 @@ class Database:
 
     def add_entry(self, entry: DatabaseEntry):
         self.db[entry.name] = entry
+        self.modified = True
 
     def find_matching_entries(self, item):
         if not item:

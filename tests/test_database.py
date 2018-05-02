@@ -37,9 +37,11 @@ class TestDatabase:
     def test_add_entry(self):
         db = database.Database(dict())
         assert len(db) == 0
+        assert not db.modified
         entry = database.DatabaseEntry('test_name', None, None)
         db.add_entry(entry)
         assert len(db) == 1
+        assert db.modified
         assert db['test_name'] == entry
 
     def test_find_matching_entries(self):

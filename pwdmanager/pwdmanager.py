@@ -79,7 +79,8 @@ def main():
 
     db = load_db(args.database)
     print(command.check_execute_render(db))
-    save_db(args.database, db)
+    if db.modified:
+        save_db(args.database, db)
 
 
 if __name__ == '__main__':
