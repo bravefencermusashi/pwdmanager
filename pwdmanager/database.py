@@ -1,36 +1,87 @@
+import abc
 import json
 
-
-def create_database(json_repr: list):
-    return Database({entry.name: entry for entry in map(create_database_entry, json_repr)})
+import gnupg
 
 
-def create_database_entry(json_repr: dict):
-    db_entry = DatabaseEntry(json_repr['name'], json_repr['login'], json_repr['pwd'])
-    db_entry.login_alias = json_repr.get('login_alias', None)
-    db_entry.aliases = json_repr.get('aliases', list())
-    db_entry.tags = json_repr.get('tags', list())
-    db_entry.creation_date = json_repr['creation_date']
-    db_entry.last_update_date = json_repr['last_update_date']
-
-    return db_entry
+class DataBaseCryptException(Exception):
+    def __init__(self, msg):
+        self.msg = msg
 
 
-def json_object_hook(o):
-    if '__db_entry__' in o:
-        db_entry = DatabaseEntry(o['name'], o['login'], o['pwd'], o.get('login_alias'))
-        db_entry.creation_date = o['creation_date']
-        db_entry.last_update_date = o['last_update_date']
-        db_entry.aliases = o.get('aliases', list())
-        db_entry.tags = o.get('tags', list())
-        return db_entry
-    else:
-        return o
+class SaveAndLoadInterceptor(abc.ABC):
+
+    @abc.abstractmethod
+    def at_save_time(self, plaintext: str):
+        pass
+
+    @abc.abstractmethod
+    def at_load_time(self, loaded_bytes: bytes):
+        pass
+
+
+class EncodeInterceptor(SaveAndLoadInterceptor):
+
+    def at_save_time(self, plaintext: str):
+        return plaintext.encode()
+
+    def at_load_time(self, loaded_bytes: bytes):
+        return loaded_bytes.decode()
+
+
+class PythonGnuPGCrypterInterceptor(SaveAndLoadInterceptor):
+    def __init__(self, passphrase):
+        self.passphrase = passphrase
+        self.gpg = gnupg.GPG()
+
+    def at_save_time(self, plaintext: str):
+        return self.encrypt(plaintext)
+
+    def encrypt(self, plaintext: str):
+        result = self.gpg.encrypt(plaintext.encode(), [], passphrase=self.passphrase, symmetric=True)
+        return result.data
+
+    def at_load_time(self, loaded_bytes: bytes):
+        return self.decrypt(loaded_bytes)
+
+    def decrypt(self, to_decrypt: bytes):
+        decrypt = self.gpg.decrypt(to_decrypt, passphrase=self.passphrase)
+        if not decrypt.ok:
+            raise DataBaseCryptException(decrypt.status)
+        else:
+            return decrypt.data.decode()
+
+
+class DBLoader:
+    def __init__(self, db_path: str, interceptor=None):
+        self.db_path = db_path
+        self.interceptor = interceptor if interceptor else EncodeInterceptor()
+
+    @staticmethod
+    def json_decode_database_entry(o):
+        if '__db_entry__' in o:
+            db_entry = DatabaseEntry(o['name'], o['login'], o['pwd'], o.get('login_alias'))
+            db_entry.creation_date = o['creation_date']
+            db_entry.last_update_date = o['last_update_date']
+            db_entry.aliases = o.get('aliases', list())
+            db_entry.tags = o.get('tags', list())
+            return db_entry
+        else:
+            return o
+
+    def load_db(self):
+        with open(self.db_path, 'rb') as db_file:
+            db_dict = json.loads(self.interceptor.at_load_time(db_file.read()),
+                                 object_hook=self.json_decode_database_entry)
+        return Database(db_dict)
+
+    def save_db(self, db):
+        with open(self.db_path, 'wb') as db_file:
+            db_file.write(self.interceptor.at_save_time(json.dumps(db, cls=DatabaseJSONEncoder)))
 
 
 class DatabaseJSONEncoder(json.JSONEncoder):
     def default(self, o):
-        default_encoding = json.JSONEncoder.default
         if isinstance(o, Database):
             return o.db
         elif isinstance(o, DatabaseEntry):
@@ -51,7 +102,38 @@ class DatabaseJSONEncoder(json.JSONEncoder):
 
             return res
         else:
-            return default_encoding(self, o)
+            return json.JSONEncoder.default(self, o)
+
+
+class DataBaseManager:
+
+    def __init__(self, db_loader: DBLoader):
+        self.db_loader = db_loader
+        self.db = None
+
+    def init_db(self):
+        self.db = Database(dict())
+        self.db_loader.save_db(self.db)
+        return self.db
+
+    def load_db(self):
+        self.db = self.db_loader.load_db()
+        return self.db
+
+    def save_db(self):
+        self.db_loader.save_db(self.db)
+
+    def save_db_if_needed(self):
+        saved = False
+        if self.db.modified:
+            self.save_db()
+            saved = True
+
+        return saved
+
+
+def create_db_manager(db_path, db_password):
+    return DataBaseManager(DBLoader(db_path, interceptor=PythonGnuPGCrypterInterceptor(db_password)))
 
 
 class DatabaseEntry:
