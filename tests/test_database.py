@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch, DEFAULT
 
 import pytest
 
@@ -64,34 +64,67 @@ class TestDatabase:
         assert db.modified
         assert db['test_name'] == entry
 
-    def test_find_matching_entries(self, db):
-        assert not db.find_matching_entries('st')
+    def test_filter_with_name_or_alias_part(self):
+        assert not database.Database.filter_with_name_or_alias_part('st', list())
         entry_1 = database.DatabaseEntry('test_name', None, None)
-        db.add_entry(entry_1)
         entry_2 = database.DatabaseEntry('toto', None, None)
-        db.add_entry(entry_2)
+        entries = [entry_1, entry_2]
 
-        matching_items = db.find_matching_entries(None)
+        matching_items = database.Database.filter_with_name_or_alias_part(None, entries)
         assert len(matching_items) == 2
         assert entry_1 in matching_items and entry_2 in matching_items
 
-        matching_items = db.find_matching_entries('')
+        matching_items = database.Database.filter_with_name_or_alias_part('', entries)
         assert len(matching_items) == 2
         assert entry_1 in matching_items and entry_2 in matching_items
 
-        matching_items = db.find_matching_entries('st')
+        matching_items = database.Database.filter_with_name_or_alias_part('st', entries)
         assert len(matching_items) == 1
         assert entry_1 in matching_items
 
-        matching_items = db.find_matching_entries('t')
+        matching_items = database.Database.filter_with_name_or_alias_part('t', entries)
         assert len(matching_items) == 2
         assert entry_1 in matching_items and entry_2 in matching_items
 
-        assert not db.find_matching_entries('lol')
+        assert not database.Database.filter_with_name_or_alias_part('lol', entries)
         entry_1.aliases.add('ololo')
-        matching_items = db.find_matching_entries('lol')
+        matching_items = database.Database.filter_with_name_or_alias_part('lol', entries)
         assert len(matching_items) == 1
         assert entry_1 in matching_items
+
+    def test_filter_with_tag_part(self):
+        assert not database.Database.filter_with_tag_part('em', list())
+        entry_1 = database.DatabaseEntry('test_name', None, None)
+        entry_1.tags = ['email']
+        entry_2 = database.DatabaseEntry('toto', None, None)
+        entry_2.tags = ['dev']
+        entries = [entry_1, entry_2]
+
+        assert not database.Database.filter_with_tag_part('o', list())
+
+        matching_items = database.Database.filter_with_tag_part(None, entries)
+        assert len(matching_items) == 2
+        assert entry_1 in matching_items and entry_2 in matching_items
+
+        matching_items = database.Database.filter_with_tag_part('', entries)
+        assert len(matching_items) == 2
+        assert entry_1 in matching_items and entry_2 in matching_items
+
+        matching_items = database.Database.filter_with_tag_part('em', entries)
+        assert len(matching_items) == 1
+        assert entry_1 in matching_items
+
+        matching_items = database.Database.filter_with_tag_part('e', entries)
+        assert len(matching_items) == 2
+        assert entry_1 in matching_items and entry_2 in matching_items
+
+    def test_find_matching_entries(self, db):
+        with patch.multiple(database.Database,
+                            filter_with_name_or_alias_part=DEFAULT,
+                            filter_with_tag_part=DEFAULT) as values:
+            db.find_matching_entries('name', 'tag')
+            assert values['filter_with_name_or_alias_part'].call_count == 1
+            assert values['filter_with_tag_part'].call_count == 1
 
 
 class TestDatabaseJSONEncoder:

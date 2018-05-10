@@ -8,37 +8,40 @@ from pwdmanager.database import create_db_manager, DataBaseCryptException
 
 def create_arg_parser():
     parser = argparse.ArgumentParser(prog="password manager")
-    parser.add_argument('-d', '--database', default=get_default_db_location())
-    parser.add_argument('-p', '--master-password', help='password to crypt and decrypt database')
+    parser.add_argument('-d', '--database', default=get_default_db_location(),
+                        help='specify where the database is located')
+    parser.add_argument('-p', '--master-password', help='password to crypt and decrypt the database')
     subparser = parser.add_subparsers(dest='command')
     subparser.required = True
 
     subparser_add = subparser.add_parser('add')
-    subparser_add.add_argument('name')
-    subparser_add.add_argument('login')
-    subparser_add.add_argument('password')
-    subparser_add.add_argument('-a', '--alias', nargs='+')
-    subparser_add.add_argument('-t', '--tags', nargs='+')
-    subparser_add.add_argument('--login-alias')
+    subparser_add.add_argument('name', help='the name of the entry, must be unique')
+    subparser_add.add_argument('login', help='the account login')
+    subparser_add.add_argument('password', help='the account password')
+    subparser_add.add_argument('-a', '--alias', nargs='+',
+                               help='aliases for the account, to give alternative names to the entry, must be unique')
+    subparser_add.add_argument('-t', '--tags', nargs='+', help='allow to categorize entries')
+    subparser_add.add_argument('--login-alias', help='optional login alias for the account')
 
     subparser_show = subparser.add_parser('show')
-    subparser_show.add_argument('name')
+    subparser_show.add_argument('name', help='full name or alias of an entry')
 
     subparser_list = subparser.add_parser('list')
-    subparser_list.add_argument('search', nargs='?')
+    subparser_list.add_argument('search', nargs='?', help='string you want to look for in name and aliases of entries')
+    subparser_list.add_argument('-t', '--tag', help='string you want to look for in tags of entries')
 
     subparser_show = subparser.add_parser('rm')
-    subparser_show.add_argument('name')
+    subparser_show.add_argument('name', help='full name or alias of an entry you want to remove')
 
     subparser_update = subparser.add_parser('update')
-    subparser_update.add_argument('name')
-    subparser_update.add_argument('-l', '--login')
-    subparser_update.add_argument('-la', '--login-alias')
-    subparser_update.add_argument('-p', '--password')
-    subparser_update.add_argument('-aa', '--add-aliases', nargs='+')
-    subparser_update.add_argument('-rma', '--remove-aliases', nargs='+')
-    subparser_update.add_argument('-at', '--add-tags', nargs='+')
-    subparser_update.add_argument('-rmt', '--remove-tags', nargs='+')
+    subparser_update.add_argument('name', help='full name or alias of an entry you want to update')
+    subparser_update.add_argument('-l', '--login', help='new login you want to set')
+    subparser_update.add_argument('-la', '--login-alias', help='new login alias you want to set')
+    subparser_update.add_argument('-p', '--password', help='new password you want to set')
+    subparser_update.add_argument('-aa', '--add-aliases', nargs='+', help='aliases you want to add')
+    subparser_update.add_argument('-rma', '--remove-aliases', nargs='+', help='aliases you want to remove')
+    subparser_update.add_argument('-at', '--add-tags', nargs='+', help='tags you want to add')
+    subparser_update.add_argument('-rmt', '--remove-tags', nargs='+', help='tags you want to remove')
 
     return parser
 
@@ -62,7 +65,7 @@ def create_showentry_command(args):
 
 
 def create_listentries_command(args):
-    return ListEntries(args.search)
+    return ListEntries(args.search, args.tag)
 
 
 def create_remove_command(args):

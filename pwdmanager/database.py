@@ -182,18 +182,38 @@ class Database:
         self.db[entry.name] = entry
         self.modified = True
 
-    def find_matching_entries(self, item):
-        if not item:
-            matching_entries = list(self.db.values())
-        else:
-            matching_entries = list()
-            for entry in self.db.values():
-                if item in entry.name:
-                    matching_entries.append(entry)
-                else:
-                    for alias in entry.aliases:
-                        if item in alias:
-                            matching_entries.append(entry)
-                            break
+    def find_matching_entries(self, name_or_alias_part, tag_part=None):
+        return self.filter_with_tag_part(tag_part,
+                                         self.filter_with_name_or_alias_part(name_or_alias_part, self.db.values()))
 
-        return matching_entries
+    @staticmethod
+    def filter_with_name_or_alias_part(name_or_alias_part, entries):
+        if name_or_alias_part:
+            name_or_alias_matching_entries = list()
+            for entry in entries:
+                if name_or_alias_part in entry.name or Database.is_part_contained_in_items(name_or_alias_part,
+                                                                                           entry.aliases):
+                    name_or_alias_matching_entries.append(entry)
+        else:
+            name_or_alias_matching_entries = entries
+
+        return name_or_alias_matching_entries
+
+    @staticmethod
+    def filter_with_tag_part(tag_part, entries):
+        if tag_part:
+            result = list()
+            for entry in entries:
+                if Database.is_part_contained_in_items(tag_part, entry.tags):
+                    result.append(entry)
+        else:
+            result = entries
+
+        return result
+
+    @staticmethod
+    def is_part_contained_in_items(part, list_):
+        for item in list_:
+            if part in item:
+                return True
+        return False

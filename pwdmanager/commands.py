@@ -100,14 +100,16 @@ class ShowEntry(Command):
 
 
 class ListEntries(Command):
-    def __init__(self, search):
+    def __init__(self, search, tag_part=None):
         self.search = search
+        self.tag_part = tag_part
 
     def perform_checks(self, database: Database):
-        pass
+        if self.tag_part is not None and len(self.tag_part) == 0:
+            raise CommandException('cannot search with an empty tag part')
 
     def execute(self, database: Database):
-        return database.find_matching_entries(self.search)
+        return database.find_matching_entries(self.search, self.tag_part)
 
     def minimal_repr(self, entry: DatabaseEntry):
         return 'name: {}\nlogin: {}\npassword: {}\n'.format(entry.name, entry.login, entry.pwd)
@@ -115,7 +117,7 @@ class ListEntries(Command):
     def render(self, entry_list: list):
         if entry_list:
             repr = io.StringIO()
-            repr.writelines(map(self.minimal_repr, entry_list))
+            repr.write('\n'.join(map(self.minimal_repr, entry_list)))
             res = repr.getvalue()
         else:
             res = ''
