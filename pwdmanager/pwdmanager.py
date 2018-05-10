@@ -2,7 +2,7 @@ import argparse
 import getpass
 import os
 
-from pwdmanager.commands import AddEntry, ShowEntry, ListEntries
+from pwdmanager.commands import AddEntry, ShowEntry, ListEntries, RemoveEntry, UpdateEntry, CommandException
 from pwdmanager.database import create_db_manager, DataBaseCryptException
 
 
@@ -26,6 +26,19 @@ def create_arg_parser():
 
     subparser_list = subparser.add_parser('list')
     subparser_list.add_argument('search', nargs='?')
+
+    subparser_show = subparser.add_parser('rm')
+    subparser_show.add_argument('name')
+
+    subparser_update = subparser.add_parser('update')
+    subparser_update.add_argument('name')
+    subparser_update.add_argument('-l', '--login')
+    subparser_update.add_argument('-la', '--login-alias')
+    subparser_update.add_argument('-p', '--password')
+    subparser_update.add_argument('-aa', '--add-aliases', nargs='+')
+    subparser_update.add_argument('-rma', '--remove-aliases', nargs='+')
+    subparser_update.add_argument('-at', '--add-tags', nargs='+')
+    subparser_update.add_argument('-rmt', '--remove-tags', nargs='+')
 
     return parser
 
@@ -52,6 +65,30 @@ def create_listentries_command(args):
     return ListEntries(args.search)
 
 
+def create_remove_command(args):
+    return RemoveEntry(args.name)
+
+
+def create_update_command(args):
+    command = UpdateEntry(args.name)
+    if args.login_alias:
+        command.login_alias = args.login_alias
+    if args.login:
+        command.login = args.login
+    if args.password:
+        command.pwd = args.password
+    if args.add_aliases:
+        command.add_aliases = args.add_aliases
+    if args.remove_aliases:
+        command.rm_aliases = args.remove_aliases
+    if args.add_tags:
+        command.add_tags = args.add_tags
+    if args.remove_tags:
+        command.rm_tags = args.remove_tags
+
+    return command
+
+
 def main():
     parser = create_arg_parser()
     args = parser.parse_args()
@@ -66,6 +103,10 @@ def main():
         command = create_showentry_command(args)
     elif args.command == 'list':
         command = create_listentries_command(args)
+    elif args.command == 'rm':
+        command = create_remove_command(args)
+    elif args.command == 'update':
+        command = create_update_command(args)
 
     db_manager = create_db_manager(args.database, master_pwd)
     try:
@@ -73,8 +114,12 @@ def main():
     except DataBaseCryptException as e:
         print('database cannot be loaded : {}'.format(str(e)))
     else:
-        print(command.check_execute_render(db))
-        db_manager.save_db_if_needed()
+        try:
+            print(command.check_execute_render(db))
+        except CommandException as e:
+            print('cannot execute command, message is: {}'.format(str(e)))
+        else:
+            db_manager.save_db_if_needed()
 
 
 if __name__ == '__main__':

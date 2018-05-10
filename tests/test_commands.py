@@ -7,7 +7,7 @@ from pwdmanager import commands, database
 
 class TestCreateEntry:
     def test_perform_checks(self):
-        db = database.Database(dict())
+        db = database.Database()
         arg_list = [(None, 'login', 'pwd'), ('name', None, 'pwd'), ('name', 'login', None)]
         for args in arg_list:
             com = commands.AddEntry(*args)
@@ -29,7 +29,7 @@ class TestCreateEntry:
             com.perform_checks(db)
 
     def test_execute(self):
-        db = database.Database(dict())
+        db = database.Database()
         command = commands.AddEntry('name', 'login', 'pwd', 'login_alias')
         alias_list = ['alias1', 'alias2']
         command.aliases = alias_list
@@ -91,7 +91,7 @@ class TestShowEntry:
         assert com.execute(db) == search_entry
         com.search = 'search_alias'
         assert not com.execute(db)
-        test_entry.aliases.append('search_alias')
+        test_entry.aliases.add('search_alias')
         assert com.execute(db) == test_entry
 
     def test_render(self):
@@ -120,3 +120,107 @@ class TestListEntries:
         com = commands.ListEntries('search')
         assert not com.render(None)
         assert com.render([database.DatabaseEntry('n', 'l', 'p'), database.DatabaseEntry('nn', 'll', 'pp')])
+
+
+class TestRemoveEntry:
+    def test_perform_checks(self):
+        com = commands.RemoveEntry('')
+        with pytest.raises(commands.CommandException):
+            com.perform_checks(None)
+        com.name = 'search'
+        com.perform_checks(None)
+
+    def test_execute(self):
+        db = MagicMock()
+        com = commands.RemoveEntry('search')
+        com.execute(db)
+        db.__delitem__.assert_called_with(com.name)
+
+    def test_render(self):
+        com = commands.RemoveEntry('search')
+        msg_true = com.render(True)
+        msg_false = com.render(False)
+        assert msg_false and msg_true
+        assert msg_false != msg_true
+
+
+class TestUpdateEntry:
+    def test_perform_checks(self):
+        com = commands.UpdateEntry('')
+        db = database.Database()
+        with pytest.raises(commands.CommandException):
+            com.perform_checks(db)
+
+        com.name_or_alias = 'name'
+        com.perform_checks(db)
+
+        entry1 = database.DatabaseEntry('entry1', None, None)
+        db.add_entry(entry1)
+
+        com.name_or_alias = 'entry1'
+        com.add_aliases = ['entry2']
+        com.perform_checks(db)
+
+        entry2 = database.DatabaseEntry('entry2', None, None)
+        entry2.aliases = {'alias2'}
+        db.add_entry(entry2)
+
+        com.name_or_alias = 'not existing entry'
+        com.add_aliases = ['entry2']
+        com.perform_checks(db)
+
+        com.name_or_alias = 'entry1'
+        com.add_aliases = ['entry2']
+        with pytest.raises(commands.CommandException):
+            com.perform_checks(db)
+
+        com.rm_aliases = ['entry2']
+        com.perform_checks(db)
+
+        com.add_aliases = ['alias2']
+        with pytest.raises(commands.CommandException):
+            com.perform_checks(db)
+
+    def test_execute(self):
+        db = database.Database()
+        com = commands.UpdateEntry('name')
+        com.pwd = 'new_pwd'
+
+        assert not com.execute(db)[0]
+        assert not db.modified
+        entry = database.DatabaseEntry('name', 'login', 'old_pwd')
+        init_update_date = 'update_date'
+        entry.last_update_date = init_update_date
+        db.add_entry(entry)
+        res = com.execute(db)
+        assert res[0]
+        assert res[1] == entry.name
+        assert entry.pwd == com.pwd
+        assert db.modified
+        assert entry.last_update_date != init_update_date
+
+        com.add_aliases.extend(['alias_to_keep', 'alias_to_rm'])
+        com.rm_aliases.append('alias_to_rm')
+        com.add_tags.extend(['tag_to_keep', 'tag_to_rm'])
+        com.rm_tags.append('tag_to_rm')
+        res = com.execute(db)
+        assert res[0]
+        assert res[1] == entry.name
+        assert entry.aliases == {'alias_to_keep'}
+        assert entry.tags == {'tag_to_keep'}
+
+        com = commands.UpdateEntry('alias_to_keep')
+        com.login = 'new_login'
+        com.login_alias = 'new_login_alias'
+        res = com.execute(db)
+        assert res[0]
+        assert res[1] == entry.name
+        assert entry.login == com.login
+        assert entry.login_alias == com.login_alias
+
+    def test_render(self):
+        com = commands.UpdateEntry('search')
+        msg_true = com.render((True, ''))
+        msg_false = com.render((False, ''))
+        assert msg_false and msg_true
+        assert msg_false != msg_true

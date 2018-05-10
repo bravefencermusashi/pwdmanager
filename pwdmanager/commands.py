@@ -121,3 +121,79 @@ class ListEntries(Command):
             res = ''
 
         return res
+
+
+class RemoveEntry(Command):
+    def __init__(self, name):
+        self.name = name
+
+    def perform_checks(self, database: Database):
+        if not self.name:
+            raise CommandException('cannot provide an empty name for removal')
+
+    def execute(self, database: Database):
+        return database.__delitem__(self.name)
+
+    def render(self, was_removed: bool):
+        if was_removed:
+            return 'the entry with name or alias {} has been removed'.format(self.name)
+        else:
+            return 'nothing removed since no entry has name or alias equal to {}'.format(self.name)
+
+
+class UpdateEntry(Command):
+    def __init__(self, name_or_alias):
+        self.name_or_alias = name_or_alias
+        self.add_aliases = list()
+        self.rm_aliases = list()
+        self.add_tags = list()
+        self.rm_tags = list()
+        self.pwd = None
+        self.login = None
+        self.login_alias = None
+
+    def perform_checks(self, database: Database):
+        if not self.name_or_alias:
+            raise CommandException('cannot provide an empty name or alias for removal')
+
+        if self.name_or_alias in database:
+            for alias_to_add in self.add_aliases:
+                if not alias_to_add in self.rm_aliases:
+                    if alias_to_add in database:
+                        raise CommandException('alias {} already exists in database'.format(alias_to_add))
+
+    def execute(self, database: Database):
+        entry = database[self.name_or_alias]
+        if entry:
+            for alias_to_add in self.add_aliases:
+                entry.aliases.add(alias_to_add)
+            for alias_to_rm in self.rm_aliases:
+                if alias_to_rm in entry.aliases:
+                    entry.aliases.remove(alias_to_rm)
+
+            for tag_to_add in self.add_tags:
+                entry.tags.add(tag_to_add)
+            for tag_to_rm in self.rm_tags:
+                if tag_to_rm in entry.tags:
+                    entry.tags.remove(tag_to_rm)
+
+            if self.pwd:
+                entry.pwd = self.pwd
+            if self.login:
+                entry.login = self.login
+            if self.login_alias:
+                entry.login_alias = self.login_alias
+
+            entry.last_update_date = datetime.datetime.now().isoformat()
+
+            database.modified = True
+
+            return True, entry.name
+        else:
+            return False, self.name_or_alias
+
+    def render(self, to_render: tuple):
+        if to_render[0]:
+            return 'entry with name {} was updated'.format(to_render[1])
+        else:
+            return 'no entry found with name or alias {}'.format(to_render[1])

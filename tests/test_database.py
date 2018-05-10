@@ -8,8 +8,11 @@ from pwdmanager import database
 
 class TestDatabase:
 
-    def test_len(self):
-        db = database.Database(dict())
+    @pytest.fixture(name='db')
+    def empty_db_fixture(self):
+        return database.Database()
+
+    def test_len(self, db):
         assert len(db) == 0
         entry = database.DatabaseEntry('test_name', None, None)
         db.db['entry'] = entry
@@ -17,8 +20,7 @@ class TestDatabase:
         del (db.db['entry'])
         assert len(db) == 0
 
-    def test_get_item_contains(self):
-        db = database.Database(dict())
+    def test_get_item_contains(self, db):
         assert db['test_name'] is None
         assert 'test_name' not in db
         entry = database.DatabaseEntry('test_name', None, None)
@@ -38,8 +40,22 @@ class TestDatabase:
         assert db['alias2'] == entry
         assert 'alias2' in db
 
-    def test_add_entry(self):
-        db = database.Database(dict())
+    def test_del_item(self, db):
+        entry = database.DatabaseEntry('name', None, None)
+        db.add_entry(entry)
+        assert len(db) == 1
+        assert db.__delitem__('name')
+        assert len(db) == 0
+
+        db.add_entry(entry)
+        assert not db.__delitem__('alias')
+        assert len(db) == 1
+
+        entry.aliases.add('alias')
+        assert db.__delitem__('alias')
+        assert len(db) == 0
+
+    def test_add_entry(self, db):
         assert len(db) == 0
         assert not db.modified
         entry = database.DatabaseEntry('test_name', None, None)
@@ -48,8 +64,7 @@ class TestDatabase:
         assert db.modified
         assert db['test_name'] == entry
 
-    def test_find_matching_entries(self):
-        db = database.Database(dict())
+    def test_find_matching_entries(self, db):
         assert not db.find_matching_entries('st')
         entry_1 = database.DatabaseEntry('test_name', None, None)
         db.add_entry(entry_1)
@@ -73,7 +88,7 @@ class TestDatabase:
         assert entry_1 in matching_items and entry_2 in matching_items
 
         assert not db.find_matching_entries('lol')
-        entry_1.aliases.append('ololo')
+        entry_1.aliases.add('ololo')
         matching_items = db.find_matching_entries('lol')
         assert len(matching_items) == 1
         assert entry_1 in matching_items
@@ -146,14 +161,14 @@ class TestDBLoader:
         assert entry.name == entry_as_json['name']
         assert entry.login == entry_as_json['login']
         assert entry.pwd == entry_as_json['pwd']
-        assert entry.aliases == list()
-        assert entry.tags == list()
+        assert entry.aliases == set()
+        assert entry.tags == set()
         assert entry.login_alias is None
         assert entry.creation_date == entry_as_json['creation_date']
         assert entry.last_update_date == entry_as_json['last_update_date']
 
-        entry_as_json['aliases'] = ['alias']
-        entry_as_json['tags'] = ['tag']
+        entry_as_json['aliases'] = {'alias'}
+        entry_as_json['tags'] = {'tag'}
 
         entry = database.DBLoader.json_decode_database_entry(entry_as_json)
         assert entry.aliases == entry_as_json['aliases']

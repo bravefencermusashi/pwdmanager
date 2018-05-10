@@ -63,8 +63,8 @@ class DBLoader:
             db_entry = DatabaseEntry(o['name'], o['login'], o['pwd'], o.get('login_alias'))
             db_entry.creation_date = o['creation_date']
             db_entry.last_update_date = o['last_update_date']
-            db_entry.aliases = o.get('aliases', list())
-            db_entry.tags = o.get('tags', list())
+            db_entry.aliases = set(o.get('aliases', set()))
+            db_entry.tags = set(o.get('tags', set()))
             return db_entry
         else:
             return o
@@ -76,8 +76,9 @@ class DBLoader:
         return Database(db_dict)
 
     def save_db(self, db):
+        to_be_written = self.interceptor.at_save_time(json.dumps(db, cls=DatabaseJSONEncoder))
         with open(self.db_path, 'wb') as db_file:
-            db_file.write(self.interceptor.at_save_time(json.dumps(db, cls=DatabaseJSONEncoder)))
+            db_file.write(to_be_written)
 
 
 class DatabaseJSONEncoder(json.JSONEncoder):
@@ -94,9 +95,9 @@ class DatabaseJSONEncoder(json.JSONEncoder):
                 'last_update_date': o.last_update_date
             }
             if o.aliases:
-                res['aliases'] = o.aliases
+                res['aliases'] = list(o.aliases)
             if o.tags:
-                res['tags'] = o.tags
+                res['tags'] = list(o.tags)
             if o.login_alias:
                 res['login_alias'] = o.login_alias
 
@@ -142,15 +143,15 @@ class DatabaseEntry:
         self.login = login
         self.login_alias = login_alias
         self.pwd = pwd
-        self.aliases = list()
-        self.tags = list()
+        self.aliases = set()
+        self.tags = set()
         self.creation_date = None
         self.last_update_date = None
 
 
 class Database:
-    def __init__(self, db: dict):
-        self.db = db
+    def __init__(self, db: dict = None):
+        self.db = db if db is not None else dict()
         self.modified = False
 
     def __len__(self):
@@ -166,6 +167,13 @@ class Database:
                     break
 
         return result
+
+    def __delitem__(self, key):
+        result = self.__getitem__(key)
+        if result:
+            self.db.__delitem__(result.name)
+            self.modified = True
+        return bool(result)
 
     def __contains__(self, item):
         return self.__getitem__(item) is not None
