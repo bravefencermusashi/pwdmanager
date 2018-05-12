@@ -32,8 +32,8 @@ You need to have GPG_ installed.
 database
 --------
 
-The database is a local JSON file. It is encrypted. At first usage it will be initialised. The default location is `~/.pwddb`
-but you can provide you own location.
+The database is a local JSON file. It is encrypted. At first usage it will be initialised. The default location is
+``~/.pwddb`` but you can provide you own location.
 
 concepts
 --------
@@ -102,7 +102,7 @@ rm
 update
     to modify an entry
 
-For all those commands, use the `-h/--help` flag to have details about parameters::
+For all those commands, use the ``-h/--help`` flag to have details about parameters::
 
     pwdmanager add -h
 
@@ -112,6 +112,6 @@ be careful
 
 - Choose your master password wisely. Do not forget it or you won't be able to recover your database
 - When adding a password you specify it in the command. Thus it may be stored in the shell history. Therefore I strongly
-  recommend to clean your history after adding passwords. On linux `sed -i /^pwdmanager/d ~/.bash_history` will do the trick
+  recommend to clean your history after adding passwords. On linux ``sed -i /^pwdmanager/d ~/.bash_history`` will do the trick
   in most cases.
 - back up your password database
