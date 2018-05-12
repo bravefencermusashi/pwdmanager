@@ -7,7 +7,7 @@ from pwdmanager.database import create_db_manager, DataBaseCryptException
 
 
 def create_arg_parser():
-    parser = argparse.ArgumentParser(prog="password manager")
+    parser = argparse.ArgumentParser(prog="pwdmanager")
     parser.add_argument('-d', '--database', default=get_default_db_location(),
                         help='specify where the database is located')
     parser.add_argument('-p', '--master-password', help='password to crypt and decrypt the database')
