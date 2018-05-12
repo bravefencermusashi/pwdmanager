@@ -112,15 +112,15 @@ class ListEntries(Command):
         return database.find_matching_entries(self.search, self.tag_part)
 
     def minimal_repr(self, entry: DatabaseEntry):
-        return 'name: {}\nlogin: {}\npassword: {}\n'.format(entry.name, entry.login, entry.pwd)
+        return 'name: {}\nlogin: {}\npassword: {}'.format(entry.name, entry.login, entry.pwd)
 
     def render(self, entry_list: list):
         if entry_list:
             repr = io.StringIO()
-            repr.write('\n'.join(map(self.minimal_repr, entry_list)))
+            repr.write('\n\n'.join(map(self.minimal_repr, entry_list)))
             res = repr.getvalue()
         else:
-            res = ''
+            res = 'no match'
 
         return res
 
@@ -183,7 +183,7 @@ class UpdateEntry(Command):
                 entry.pwd = self.pwd
             if self.login:
                 entry.login = self.login
-            if self.login_alias:
+            if self.login_alias is not None:
                 entry.login_alias = self.login_alias
 
             entry.last_update_date = datetime.datetime.now().isoformat()

@@ -19,7 +19,7 @@ installation
 
 Change directory to the root of the sources and issue::
 
-    make
+    python setup.py bdist_wheel
     pip install dist/pwdmanager-XXX-py3-none-nay.whl
 
 requirements
@@ -114,4 +114,6 @@ be careful
 - When adding a password you specify it in the command. Thus it may be stored in the shell history. Therefore I strongly
   recommend to clean your history after adding passwords. On linux ``sed -i /^pwdmanager/d ~/.bash_history`` will do the trick
   in most cases.
-- back up your password database
+- When adding a password I recommend you surround it by single quotes because special characters may be interpreted
+  by the shell
+- back your password database up

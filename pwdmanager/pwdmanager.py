@@ -74,7 +74,7 @@ def create_remove_command(args):
 
 def create_update_command(args):
     command = UpdateEntry(args.name)
-    if args.login_alias:
+    if args.login_alias is not None:
         command.login_alias = args.login_alias
     if args.login:
         command.login = args.login

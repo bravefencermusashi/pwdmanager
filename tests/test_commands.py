@@ -118,7 +118,7 @@ class TestListEntries:
 
     def test_render(self):
         com = commands.ListEntries('search')
-        assert not com.render(None)
+        assert com.render(None)
         assert com.render([database.DatabaseEntry('n', 'l', 'p'), database.DatabaseEntry('nn', 'll', 'pp')])
 
 
