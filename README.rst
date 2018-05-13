@@ -5,13 +5,13 @@ pwdmanager
 Keep your passwords safe and close
 
 This is a command line tool to manage your passwords. Those are stored locally in an encrypted JSON formatted file. The
-encryption and decryption is performed by GPG. Passwords unlocking is done using a master password.
+encryption and decryption is performed by GPG_. Passwords unlocking is done using a master password.
 
 Benefits of using this program include :
 
 - use difficult and different passwords to secure your accounts
 - you don't have to trust third parties for storing your passwords : everything is stored locally
-- provide high end and reliable encryption with GPG
+- provide high end and reliable encryption with GPG_
 - it is open source : anybody can check the code
 
 installation
