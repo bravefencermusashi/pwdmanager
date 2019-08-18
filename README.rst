@@ -17,10 +17,16 @@ Benefits of using this program include :
 installation
 ------------
 
-Change directory to the root of the sources and issue::
+To build the wheel you have to have `poetry <https://poetry.eustace.io/>`_ installed.
+Then change directory to the root of the sources and issue::
 
-    python setup.py bdist_wheel
-    pip install dist/pwdmanager-XXX-py3-none-nay.whl
+    poetry build
+
+Then you can install the wheel with your favorite package manager::
+
+    pip install dist/pwdmanager-XXX-py3-none-any.whl
+    pipenv install dist/pwdmanager-XXX-py3-none-any.whl
+    poetry add pwdmanager --path=dist/pwdmanager-XXX-py3-none-any.whl
 
 requirements
 ------------
