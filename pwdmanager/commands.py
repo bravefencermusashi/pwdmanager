@@ -149,8 +149,9 @@ class RemoveEntry(Command):
         if was_removed:
             return "the entry with name or alias {} has been removed".format(self.name)
         else:
-            return "nothing removed since no entry has name or alias equal to {}".format(
-                self.name
+            return (
+                f"nothing removed since no entry has name "
+                f"or alias equal to {self.name}"
             )
 
 
@@ -171,7 +172,7 @@ class UpdateEntry(Command):
 
         if self.name_or_alias in database:
             for alias_to_add in self.add_aliases:
-                if not alias_to_add in self.rm_aliases:
+                if alias_to_add not in self.rm_aliases:
                     if alias_to_add in database:
                         raise CommandException(
                             "alias {} already exists in database".format(alias_to_add)

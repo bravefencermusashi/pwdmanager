@@ -35,7 +35,8 @@ def create_arg_parser():
         "-a",
         "--alias",
         nargs="+",
-        help="aliases for the account, to give alternative names to the entry, must be unique",
+        help="aliases for the account,"
+        " to give alternative names to the entry, must be unique",
     )
     subparser_add.add_argument(
         "-t", "--tags", nargs="+", help="allow to categorize entries"
