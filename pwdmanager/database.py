@@ -10,7 +10,6 @@ class DataBaseCryptException(Exception):
 
 
 class SaveAndLoadInterceptor(abc.ABC):
-
     @abc.abstractmethod
     def at_save_time(self, plaintext: str):
         pass
@@ -21,7 +20,6 @@ class SaveAndLoadInterceptor(abc.ABC):
 
 
 class EncodeInterceptor(SaveAndLoadInterceptor):
-
     def at_save_time(self, plaintext: str):
         return plaintext.encode()
 
@@ -38,7 +36,9 @@ class PythonGnuPGCrypterInterceptor(SaveAndLoadInterceptor):
         return self.encrypt(plaintext)
 
     def encrypt(self, plaintext: str):
-        result = self.gpg.encrypt(plaintext.encode(), [], passphrase=self.passphrase, symmetric=True)
+        result = self.gpg.encrypt(
+            plaintext.encode(), [], passphrase=self.passphrase, symmetric=True
+        )
         return result.data
 
     def at_load_time(self, loaded_bytes: bytes):
@@ -59,25 +59,31 @@ class DBLoader:
 
     @staticmethod
     def json_decode_database_entry(o):
-        if '__db_entry__' in o:
-            db_entry = DatabaseEntry(o['name'], o['login'], o['pwd'], o.get('login_alias'))
-            db_entry.creation_date = o['creation_date']
-            db_entry.last_update_date = o['last_update_date']
-            db_entry.aliases = set(o.get('aliases', set()))
-            db_entry.tags = set(o.get('tags', set()))
+        if "__db_entry__" in o:
+            db_entry = DatabaseEntry(
+                o["name"], o["login"], o["pwd"], o.get("login_alias")
+            )
+            db_entry.creation_date = o["creation_date"]
+            db_entry.last_update_date = o["last_update_date"]
+            db_entry.aliases = set(o.get("aliases", set()))
+            db_entry.tags = set(o.get("tags", set()))
             return db_entry
         else:
             return o
 
     def load_db(self):
-        with open(self.db_path, 'rb') as db_file:
-            db_dict = json.loads(self.interceptor.at_load_time(db_file.read()),
-                                 object_hook=self.json_decode_database_entry)
+        with open(self.db_path, "rb") as db_file:
+            db_dict = json.loads(
+                self.interceptor.at_load_time(db_file.read()),
+                object_hook=self.json_decode_database_entry,
+            )
         return Database(db_dict)
 
     def save_db(self, db):
-        to_be_written = self.interceptor.at_save_time(json.dumps(db, cls=DatabaseJSONEncoder))
-        with open(self.db_path, 'wb') as db_file:
+        to_be_written = self.interceptor.at_save_time(
+            json.dumps(db, cls=DatabaseJSONEncoder)
+        )
+        with open(self.db_path, "wb") as db_file:
             db_file.write(to_be_written)
 
 
@@ -87,19 +93,19 @@ class DatabaseJSONEncoder(json.JSONEncoder):
             return o.db
         elif isinstance(o, DatabaseEntry):
             res = {
-                '__db_entry__': True,
-                'name': o.name,
-                'login': o.login,
-                'pwd': o.pwd,
-                'creation_date': o.creation_date,
-                'last_update_date': o.last_update_date
+                "__db_entry__": True,
+                "name": o.name,
+                "login": o.login,
+                "pwd": o.pwd,
+                "creation_date": o.creation_date,
+                "last_update_date": o.last_update_date,
             }
             if o.aliases:
-                res['aliases'] = list(o.aliases)
+                res["aliases"] = list(o.aliases)
             if o.tags:
-                res['tags'] = list(o.tags)
+                res["tags"] = list(o.tags)
             if o.login_alias:
-                res['login_alias'] = o.login_alias
+                res["login_alias"] = o.login_alias
 
             return res
         else:
@@ -107,7 +113,6 @@ class DatabaseJSONEncoder(json.JSONEncoder):
 
 
 class DataBaseManager:
-
     def __init__(self, db_loader: DBLoader):
         self.db_loader = db_loader
         self.db = None
@@ -134,7 +139,9 @@ class DataBaseManager:
 
 
 def create_db_manager(db_path, db_password):
-    return DataBaseManager(DBLoader(db_path, interceptor=PythonGnuPGCrypterInterceptor(db_password)))
+    return DataBaseManager(
+        DBLoader(db_path, interceptor=PythonGnuPGCrypterInterceptor(db_password))
+    )
 
 
 class DatabaseEntry:
@@ -183,16 +190,22 @@ class Database:
         self.modified = True
 
     def find_matching_entries(self, name_or_alias_part, tag_part=None):
-        return self.filter_with_tag_part(tag_part,
-                                         self.filter_with_name_or_alias_part(name_or_alias_part, self.db.values()))
+        return self.filter_with_tag_part(
+            tag_part,
+            self.filter_with_name_or_alias_part(name_or_alias_part, self.db.values()),
+        )
 
     @staticmethod
     def filter_with_name_or_alias_part(name_or_alias_part, entries):
         if name_or_alias_part:
             name_or_alias_matching_entries = list()
             for entry in entries:
-                if name_or_alias_part in entry.name or Database.is_part_contained_in_items(name_or_alias_part,
-                                                                                           entry.aliases):
+                if (
+                    name_or_alias_part in entry.name
+                    or Database.is_part_contained_in_items(
+                        name_or_alias_part, entry.aliases
+                    )
+                ):
                     name_or_alias_matching_entries.append(entry)
         else:
             name_or_alias_matching_entries = entries
