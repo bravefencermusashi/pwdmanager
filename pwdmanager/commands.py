@@ -1,9 +1,8 @@
 import datetime
-
 import io
+from abc import ABC, abstractmethod
 
 from pwdmanager.database import Database, DatabaseEntry
-from abc import ABC, abstractmethod
 
 
 class CommandException(Exception):

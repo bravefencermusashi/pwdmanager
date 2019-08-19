@@ -1,8 +1,7 @@
 import json
-from unittest.mock import MagicMock, patch, DEFAULT
+from unittest.mock import DEFAULT, MagicMock, patch
 
 import pytest
-
 from pwdmanager import database
 
 
@@ -16,7 +15,7 @@ class TestDatabase:
         entry = database.DatabaseEntry("test_name", None, None)
         db.db["entry"] = entry
         assert len(db) == 1
-        del (db.db["entry"])
+        del db.db["entry"]
         assert len(db) == 0
 
     def test_get_item_contains(self, db):

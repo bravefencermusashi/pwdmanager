@@ -4,13 +4,13 @@ import os
 
 from pwdmanager.commands import (
     AddEntry,
-    ShowEntry,
+    CommandException,
     ListEntries,
     RemoveEntry,
+    ShowEntry,
     UpdateEntry,
-    CommandException,
 )
-from pwdmanager.database import create_db_manager, DataBaseCryptException
+from pwdmanager.database import DataBaseCryptException, create_db_manager
 
 
 def create_arg_parser():
