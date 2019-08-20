@@ -2,6 +2,7 @@ import json
 from unittest.mock import DEFAULT, MagicMock, patch
 
 import pytest
+
 from pwdmanager import database
 
 
