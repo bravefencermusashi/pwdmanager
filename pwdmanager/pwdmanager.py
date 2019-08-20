@@ -2,52 +2,96 @@ import argparse
 import getpass
 import os
 
-from pwdmanager.commands import AddEntry, ShowEntry, ListEntries, RemoveEntry, UpdateEntry, CommandException
-from pwdmanager.database import create_db_manager, DataBaseCryptException
+from pwdmanager.commands import (
+    AddEntry,
+    CommandException,
+    ListEntries,
+    RemoveEntry,
+    ShowEntry,
+    UpdateEntry,
+)
+from pwdmanager.database import DataBaseCryptException, create_db_manager
 
 
 def create_arg_parser():
     parser = argparse.ArgumentParser(prog="pwdmanager")
-    parser.add_argument('-d', '--database', default=get_default_db_location(),
-                        help='specify where the database is located')
-    parser.add_argument('-p', '--master-password', help='password to crypt and decrypt the database')
-    subparser = parser.add_subparsers(dest='command')
+    parser.add_argument(
+        "-d",
+        "--database",
+        default=get_default_db_location(),
+        help="specify where the database is located",
+    )
+    parser.add_argument(
+        "-p", "--master-password", help="password to crypt and decrypt the database"
+    )
+    subparser = parser.add_subparsers(dest="command")
     subparser.required = True
 
-    subparser_add = subparser.add_parser('add')
-    subparser_add.add_argument('name', help='the name of the entry, must be unique')
-    subparser_add.add_argument('login', help='the account login')
-    subparser_add.add_argument('password', help='the account password')
-    subparser_add.add_argument('-a', '--alias', nargs='+',
-                               help='aliases for the account, to give alternative names to the entry, must be unique')
-    subparser_add.add_argument('-t', '--tags', nargs='+', help='allow to categorize entries')
-    subparser_add.add_argument('--login-alias', help='optional login alias for the account')
+    subparser_add = subparser.add_parser("add")
+    subparser_add.add_argument("name", help="the name of the entry, must be unique")
+    subparser_add.add_argument("login", help="the account login")
+    subparser_add.add_argument("password", help="the account password")
+    subparser_add.add_argument(
+        "-a",
+        "--alias",
+        nargs="+",
+        help="aliases for the account,"
+        " to give alternative names to the entry, must be unique",
+    )
+    subparser_add.add_argument(
+        "-t", "--tags", nargs="+", help="allow to categorize entries"
+    )
+    subparser_add.add_argument(
+        "--login-alias", help="optional login alias for the account"
+    )
 
-    subparser_show = subparser.add_parser('show')
-    subparser_show.add_argument('name', help='full name or alias of an entry')
+    subparser_show = subparser.add_parser("show")
+    subparser_show.add_argument("name", help="full name or alias of an entry")
 
-    subparser_list = subparser.add_parser('list')
-    subparser_list.add_argument('search', nargs='?', help='string you want to look for in name and aliases of entries')
-    subparser_list.add_argument('-t', '--tag', help='string you want to look for in tags of entries')
+    subparser_list = subparser.add_parser("list")
+    subparser_list.add_argument(
+        "search",
+        nargs="?",
+        help="string you want to look for in name and aliases of entries",
+    )
+    subparser_list.add_argument(
+        "-t", "--tag", help="string you want to look for in tags of entries"
+    )
 
-    subparser_show = subparser.add_parser('rm')
-    subparser_show.add_argument('name', help='full name or alias of an entry you want to remove')
+    subparser_show = subparser.add_parser("rm")
+    subparser_show.add_argument(
+        "name", help="full name or alias of an entry you want to remove"
+    )
 
-    subparser_update = subparser.add_parser('update')
-    subparser_update.add_argument('name', help='full name or alias of an entry you want to update')
-    subparser_update.add_argument('-l', '--login', help='new login you want to set')
-    subparser_update.add_argument('-la', '--login-alias', help='new login alias you want to set')
-    subparser_update.add_argument('-p', '--password', help='new password you want to set')
-    subparser_update.add_argument('-aa', '--add-aliases', nargs='+', help='aliases you want to add')
-    subparser_update.add_argument('-rma', '--remove-aliases', nargs='+', help='aliases you want to remove')
-    subparser_update.add_argument('-at', '--add-tags', nargs='+', help='tags you want to add')
-    subparser_update.add_argument('-rmt', '--remove-tags', nargs='+', help='tags you want to remove')
+    subparser_update = subparser.add_parser("update")
+    subparser_update.add_argument(
+        "name", help="full name or alias of an entry you want to update"
+    )
+    subparser_update.add_argument("-l", "--login", help="new login you want to set")
+    subparser_update.add_argument(
+        "-la", "--login-alias", help="new login alias you want to set"
+    )
+    subparser_update.add_argument(
+        "-p", "--password", help="new password you want to set"
+    )
+    subparser_update.add_argument(
+        "-aa", "--add-aliases", nargs="+", help="aliases you want to add"
+    )
+    subparser_update.add_argument(
+        "-rma", "--remove-aliases", nargs="+", help="aliases you want to remove"
+    )
+    subparser_update.add_argument(
+        "-at", "--add-tags", nargs="+", help="tags you want to add"
+    )
+    subparser_update.add_argument(
+        "-rmt", "--remove-tags", nargs="+", help="tags you want to remove"
+    )
 
     return parser
 
 
 def get_default_db_location():
-    return os.path.join(os.path.expanduser('~'), '.pwddb')
+    return os.path.join(os.path.expanduser("~"), ".pwddb")
 
 
 def create_addentry_command(args):
@@ -100,30 +144,34 @@ def main():
     if not master_pwd:
         master_pwd = getpass.getpass()
 
-    if args.command == 'add':
+    if args.command == "add":
         command = create_addentry_command(args)
-    elif args.command == 'show':
+    elif args.command == "show":
         command = create_showentry_command(args)
-    elif args.command == 'list':
+    elif args.command == "list":
         command = create_listentries_command(args)
-    elif args.command == 'rm':
+    elif args.command == "rm":
         command = create_remove_command(args)
-    elif args.command == 'update':
+    elif args.command == "update":
         command = create_update_command(args)
 
     db_manager = create_db_manager(args.database, master_pwd)
     try:
-        db = db_manager.load_db() if os.path.exists(args.database) else db_manager.init_db()
+        db = (
+            db_manager.load_db()
+            if os.path.exists(args.database)
+            else db_manager.init_db()
+        )
     except DataBaseCryptException as e:
-        print('database cannot be loaded : {}'.format(str(e)))
+        print("database cannot be loaded : {}".format(str(e)))
     else:
         try:
             print(command.check_execute_render(db))
         except CommandException as e:
-            print('cannot execute command, message is: {}'.format(str(e)))
+            print("cannot execute command, message is: {}".format(str(e)))
         else:
             db_manager.save_db_if_needed()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

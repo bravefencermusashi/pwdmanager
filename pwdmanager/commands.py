@@ -1,9 +1,8 @@
 import datetime
-
 import io
+from abc import ABC, abstractmethod
 
 from pwdmanager.database import Database, DatabaseEntry
-from abc import ABC, abstractmethod
 
 
 class CommandException(Exception):
@@ -12,7 +11,6 @@ class CommandException(Exception):
 
 
 class Command(ABC):
-
     @abstractmethod
     def perform_checks(self, database: Database):
         pass
@@ -42,17 +40,23 @@ class AddEntry(Command):
 
     def perform_checks(self, database: Database):
         if not self.name or not self.login or not self.pwd:
-            raise CommandException('cannot have a name, login or password empty')
+            raise CommandException("cannot have a name, login or password empty")
 
         if self.name in database:
-            raise CommandException('name {} already exists in database'.format(self.name))
+            raise CommandException(
+                "name {} already exists in database".format(self.name)
+            )
 
         for alias in self.aliases:
             if alias in database:
-                raise CommandException('alias {} already exists in database'.format(alias))
+                raise CommandException(
+                    "alias {} already exists in database".format(alias)
+                )
 
     def execute(self, database: Database):
-        entry = DatabaseEntry(self.name, self.login, self.pwd, login_alias=self.login_alias)
+        entry = DatabaseEntry(
+            self.name, self.login, self.pwd, login_alias=self.login_alias
+        )
         entry.aliases = self.aliases
         entry.tags = self.tags
         entry.creation_date = datetime.datetime.now().isoformat()
@@ -63,7 +67,9 @@ class AddEntry(Command):
         return entry
 
     def render(self, to_render):
-        return 'entry with name {} successfully added to database'.format(to_render.name)
+        return "entry with name {} successfully added to database".format(
+            to_render.name
+        )
 
 
 class ShowEntry(Command):
@@ -72,26 +78,26 @@ class ShowEntry(Command):
 
     def perform_checks(self, database: Database):
         if not self.search:
-            raise CommandException('search cannot be empty')
+            raise CommandException("search cannot be empty")
 
     def render(self, entry: DatabaseEntry):
         if entry:
             repr = io.StringIO()
-            repr.write('name: {}\n'.format(entry.name))
-            repr.write('login: {}\n'.format(entry.login))
+            repr.write("name: {}\n".format(entry.name))
+            repr.write("login: {}\n".format(entry.login))
             if entry.login_alias:
-                repr.write('login alias: {}\n'.format(entry.login_alias))
-            repr.write('password: {}\n'.format(entry.pwd))
+                repr.write("login alias: {}\n".format(entry.login_alias))
+            repr.write("password: {}\n".format(entry.pwd))
             if entry.aliases:
-                repr.write('aliases: {}\n'.format(', '.join(entry.aliases)))
+                repr.write("aliases: {}\n".format(", ".join(entry.aliases)))
             if entry.tags:
-                repr.write('tags: {}\n'.format(', '.join(entry.tags)))
-            repr.write('creation date: {}\n'.format(entry.creation_date))
-            repr.write('last update date: {}\n'.format(entry.last_update_date))
+                repr.write("tags: {}\n".format(", ".join(entry.tags)))
+            repr.write("creation date: {}\n".format(entry.creation_date))
+            repr.write("last update date: {}\n".format(entry.last_update_date))
 
             res = repr.getvalue()
         else:
-            res = ''
+            res = ""
 
         return res
 
@@ -106,21 +112,23 @@ class ListEntries(Command):
 
     def perform_checks(self, database: Database):
         if self.tag_part is not None and len(self.tag_part) == 0:
-            raise CommandException('cannot search with an empty tag part')
+            raise CommandException("cannot search with an empty tag part")
 
     def execute(self, database: Database):
         return database.find_matching_entries(self.search, self.tag_part)
 
     def minimal_repr(self, entry: DatabaseEntry):
-        return 'name: {}\nlogin: {}\npassword: {}'.format(entry.name, entry.login, entry.pwd)
+        return "name: {}\nlogin: {}\npassword: {}".format(
+            entry.name, entry.login, entry.pwd
+        )
 
     def render(self, entry_list: list):
         if entry_list:
             repr = io.StringIO()
-            repr.write('\n\n'.join(map(self.minimal_repr, entry_list)))
+            repr.write("\n\n".join(map(self.minimal_repr, entry_list)))
             res = repr.getvalue()
         else:
-            res = 'no match'
+            res = "no match"
 
         return res
 
@@ -131,16 +139,19 @@ class RemoveEntry(Command):
 
     def perform_checks(self, database: Database):
         if not self.name:
-            raise CommandException('cannot provide an empty name for removal')
+            raise CommandException("cannot provide an empty name for removal")
 
     def execute(self, database: Database):
         return database.__delitem__(self.name)
 
     def render(self, was_removed: bool):
         if was_removed:
-            return 'the entry with name or alias {} has been removed'.format(self.name)
+            return "the entry with name or alias {} has been removed".format(self.name)
         else:
-            return 'nothing removed since no entry has name or alias equal to {}'.format(self.name)
+            return (
+                f"nothing removed since no entry has name "
+                f"or alias equal to {self.name}"
+            )
 
 
 class UpdateEntry(Command):
@@ -156,13 +167,15 @@ class UpdateEntry(Command):
 
     def perform_checks(self, database: Database):
         if not self.name_or_alias:
-            raise CommandException('cannot provide an empty name or alias for removal')
+            raise CommandException("cannot provide an empty name or alias for removal")
 
         if self.name_or_alias in database:
             for alias_to_add in self.add_aliases:
-                if not alias_to_add in self.rm_aliases:
+                if alias_to_add not in self.rm_aliases:
                     if alias_to_add in database:
-                        raise CommandException('alias {} already exists in database'.format(alias_to_add))
+                        raise CommandException(
+                            "alias {} already exists in database".format(alias_to_add)
+                        )
 
     def execute(self, database: Database):
         entry = database[self.name_or_alias]
@@ -196,6 +209,6 @@ class UpdateEntry(Command):
 
     def render(self, to_render: tuple):
         if to_render[0]:
-            return 'entry with name {} was updated'.format(to_render[1])
+            return "entry with name {} was updated".format(to_render[1])
         else:
-            return 'no entry found with name or alias {}'.format(to_render[1])
+            return "no entry found with name or alias {}".format(to_render[1])
