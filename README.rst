@@ -17,8 +17,16 @@ Benefits of using this program include :
 installation
 ------------
 
-To build the wheel you have to have `poetry <https://poetry.eustace.io/>`_ installed.
-Then change directory to the root of the sources and issue::
+With pip or your favorite package manager::
+
+    pip install pwdmanager
+    pipenv install pwdmanager
+    poetry add pwdmanager
+
+That's it.
+
+If you want to build the wheel yourself you have to have `poetry <https://poetry.eustace.io/>`_
+installed. Then change directory to the root of the sources and issue::
 
     poetry build
 
