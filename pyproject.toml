@@ -1,9 +1,18 @@
 [tool.poetry]
 name = "pwdmanager"
-version = "1.0.2"
+version = "1.0.0"
 description = "command line tool to manage passwords"
-authors = ["Alex <alex.git@ralouf.fr>"]
+authors = ["Alexandre G <alex.git@ralouf.fr>"]
 license = "GPL-3.0"
+repository = "https://github.com/bravefencermusashi/pwdmanager"
+homepage = "https://github.com/bravefencermusashi/pwdmanager"
+readme = "README.rst"
+classifiers = [
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 
 [tool.poetry.scripts]
 pwdmanager = 'pwdmanager.pwdmanager:main'
